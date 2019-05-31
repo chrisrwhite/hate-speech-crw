@@ -4,6 +4,8 @@
 ## toxic
 ##################################################
 ## Author: Christopher White
+
+## create requirements.txt
 ##################################################
 
 import csv, sqlite3
