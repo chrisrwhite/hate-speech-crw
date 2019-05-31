@@ -10,7 +10,7 @@
 
 import csv, sqlite3
 import pandas as pd
-db_path = '../../data/processed/test.db'
+db_path = '../data/processed/test.db'
 
 
 # dataset = 'hate'
@@ -23,7 +23,7 @@ cur = con.cursor()
 
 
 if dataset == 'hate':
-    raw_path = '../../data/raw/consolidated_data_4_10_2019.csv'
+    raw_path = '../data/raw/consolidated_data_4_10_2019.csv'
     cur.execute("DROP TABLE IF EXISTS hate")
     cur.execute("DROP TABLE IF EXISTS t")
 
@@ -53,7 +53,7 @@ if dataset == 'hate':
     # output_name = 'hate_clean_nostop'
 
 else:
-    raw_path = '../../data/raw/jigsaw-toxic-comment-classification-challenge/train.csv'
+    raw_path = '../data/raw/jigsaw-toxic-comment-classification-challenge/train.csv'
     cur.execute("DROP TABLE IF EXISTS toxic_temp")
     cur.execute("DROP TABLE IF EXISTS toxic")
     columns = ["id", "comment_text", "toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"]
