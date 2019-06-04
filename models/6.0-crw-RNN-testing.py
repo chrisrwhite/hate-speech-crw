@@ -11,15 +11,15 @@ path_input = "../data/processed/sentence_embeddings/universal_feature_file_witho
 
 
 
-db_path = '../../data/processed/test.db'
+db_path = '../data/processed/test.db'
 # db = sqlite3.connect(db_path)
 con = sqlite3.connect(db_path)
 cur = con.cursor()
 
 
 
-dataset = 'hate_nostop'
-# dataset = 'toxic_nostop'
+# dataset = 'hate_nostop'
+dataset = 'toxic_nostop'
 
 
 

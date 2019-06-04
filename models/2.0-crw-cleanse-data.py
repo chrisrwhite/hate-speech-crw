@@ -8,21 +8,21 @@
 import sqlite3
 import pandas as pd
 import numpy as np
-import seaborn as sns
+# import seaborn as sns
 from nltk.corpus import stopwords
 import string
 import re
-import splitter
-from sklearn.metrics.pairwise import cosine_similarity
+# import splitter
+# from sklearn.metrics.pairwise import cosine_similarity
 #importing the glove library
 # from glove import Corpus, Glove
 # train/validation/test split
-from sklearn.model_selection import train_test_split
+# from sklearn.model_selection import train_test_split
 import csv
 
-from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score, roc_curve, accuracy_score
+# from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score, roc_curve, accuracy_score
 
-db_path = '../../data/processed/test.db'
+db_path = '../data/processed/test.db'
 # raw_path = '../data/raw/consolidated_data_raw.csv'
 con = sqlite3.connect(db_path)
 cur = con.cursor()
@@ -136,7 +136,7 @@ df_new = pd.DataFrame(train_cleansed_tokens, columns = ['extract'])
 df_new = df_new.join(label_df)
 
 print('df_new.head()')
-print(df_new.head())
+print(df_new.tail())
 
 cur.execute("DROP TABLE IF EXISTS {}".format(output_name))
 print('cleansed text exported to db, table name: ' + output_name)
