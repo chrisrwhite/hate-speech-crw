@@ -1,5 +1,6 @@
 import pandas as pd
 import sqlite3
+from sklearn.model_selection import train_test_split
 
 #need to update input file to ESN Clean _Nostop, on my desktop
 
@@ -18,8 +19,8 @@ cur = con.cursor()
 
 
 
-# dataset = 'hate_nostop'
-dataset = 'toxic_nostop'
+dataset = 'hate_nostop'
+# dataset = 'toxic_nostop'
 
 
 
@@ -29,39 +30,51 @@ if dataset == 'hate_nostop':
         "SELECT * from hate_universal_encoder_embedding_features",
         con)
 
+    cols = X.columns
+    print(cols)
+
     print('hate full feature file')
     print(X['extract'].head())
     print(X.shape)
 
 
     # separate features from label
-    y_cols = ['CODE_0', 'CODE_1', 'CODE_2', 'CODE_3', 'CODE_4', 'CODE_5', 'CODE_6']
+    # y_cols = ['CODE', 'CODE_0', 'CODE_1', 'CODE_2', 'CODE_3', 'CODE_4', 'CODE_5', 'CODE_6']
+    y_cols = ['CODE']
 
     y = X.loc[:, y_cols]
-    X.drop(['id','extract','CODE_0', 'CODE_1', 'CODE_2', 'CODE_3', 'CODE_4', 'CODE_5', 'CODE_6'], axis=1, inplace = True)
+    # X.drop(['id','extract','CODE','CODE_0', 'CODE_1', 'CODE_2', 'CODE_3', 'CODE_4', 'CODE_5', 'CODE_6'], axis=1, inplace = True)
+    X.drop(['id', 'extract', 'CODE'], axis=1,
+           inplace=True)
+    # need to make sure i am separating a test dataset completely from the neural network training
+    # https://stackoverflow.com/questions/46308374/what-is-validation-data-used-for-in-a-keras-sequential-model
 
-    print('X')
-    print(X.head())
-    print('y')
-    print(y.head())
+
+
+    X_training, X_testing, y_training, y_testing = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    print('X_training')
+    print(X_training.head())
+    print('y_training')
+    print(y_training.head())
 
     # output_name = 'hate_clean_nostop'
 
 else:
 
-    X = pd.read_sql_query("SELECT * from toxic_universal_encoder_embedding_features", con)
+    X_training = pd.read_sql_query("SELECT * from toxic_universal_encoder_embedding_features", con)
 
-    print(X.head())
-    print(X.dtypes)
+    print(X_training.head())
+    print(X_training.dtypes)
 
 
     y_cols = ["toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"]
-    y = X.loc[:, y_cols]
-    X.drop(['extract', "toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"],
+    y_training = X_training.loc[:, y_cols]
+    X_training.drop(['extract', "toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"],
            axis=1, inplace=True)
 
-    print(X.head())
-    print(y.head())
+    print(X_training.head())
+    print(y_training.head())
 
 
     # output_name = 'toxic_clean_nostop'
@@ -70,29 +83,42 @@ else:
 print('creating train and test sets')
 
 import numpy as np
-from sklearn.model_selection import train_test_split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-X_train_np = np.array(X_train)
-X_test_np = np.array(X_test)
-y_train_np = np.array(y_train)
-y_test_np = np.array(y_test)
-
-print("Number transactions X_train dataset: ", X_train.shape)
-print("Number transactions y_train dataset: ", y_train.shape)
-print("Number transactions X_test dataset: ", X_test.shape)
-print("Number transactions y_test dataset: ", y_test.shape)
+# from sklearn.model_selection import train_test_split
+# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+#
+# X_train_full_trial_df = pd.merge(X_train, y_train, left_index=True, right_index=True)
+# X_test_full_trial_df = pd.merge(X_test, y_test, left_index=True, right_index=True)
+#
+# y_train = X_train_full_trial_df[['CODE_0', 'CODE_1', 'CODE_2', 'CODE_3', 'CODE_4', 'CODE_5', 'CODE_6']]
+# X_train = X_train_full_trial_df.drop(
+#     ['CODE', 'CODE_0', 'CODE_1', 'CODE_2', 'CODE_3', 'CODE_4', 'CODE_5', 'CODE_6'], axis=1)
+#
+# y_test = X_test_full_trial_df[['CODE_0', 'CODE_1', 'CODE_2', 'CODE_3', 'CODE_4', 'CODE_5', 'CODE_6']]
+# X_test = X_test_full_trial_df.drop(['CODE', 'CODE_0', 'CODE_1', 'CODE_2', 'CODE_3', 'CODE_4', 'CODE_5', 'CODE_6'], axis=1)
+#
+# X_train_np = np.array(X_train)
+# X_test_np = np.array(X_test)
+# y_train_np = np.array(y_train)
+# y_test_np = np.array(y_test)
+#
+# print("Number transactions X_train dataset: ", X_train.shape)
+# print("Number transactions y_train dataset: ", y_train.shape)
+# print("Number transactions X_test dataset: ", X_test.shape)
+# print("Number transactions y_test dataset: ", y_test.shape)
 
 
 # convert numpy stuff back into pandas dataframes
-X_train = pd.DataFrame(X_train)
-y_train = pd.DataFrame(y_train, columns = y_cols)
-
-
-X_test = pd.DataFrame(X_test_np)
-y_test = pd.DataFrame(y_test_np, columns = y_cols)
-
-print(y_test.head())
+# y_cols_new = ['CODE_0', 'CODE_1', 'CODE_2', 'CODE_3', 'CODE_4', 'CODE_5', 'CODE_6']
+# print("y_cols_new: " + str(y_cols_new))
+#
+# X_train = pd.DataFrame(X_train)
+# y_train = pd.DataFrame(y_train, columns = y_cols_new)
+#
+#
+# X_test = pd.DataFrame(X_test_np)
+# y_test = pd.DataFrame(y_test_np, columns = y_cols_new)
+#
+# print(y_test.head())
 
 
 
@@ -107,31 +133,30 @@ print(y_test.head())
 
 import numpy as np
 
-def reshape_data(X_train, X_test, y_train, y_test):
+def reshape_data(X_train, X_val, y_train, y_val):
     X_train_reshape = np.reshape(X_train.values, ( X_train.shape[0],1, X_train.shape[1]))
 
-    X_test_reshape = np.reshape(X_test.values, ( X_test.shape[0],1, X_test.shape[1]))
+    X_val_reshape = np.reshape(X_val.values, ( X_val.shape[0],1, X_val.shape[1]))
 
     y_train_reshape_matrix = y_train.values
     y_train_reshape_matrix = y_train_reshape_matrix.reshape(y_train.shape[0],1,y_train.shape[1])
 
-    y_test_reshape_matrix = y_test.values
-    y_test_reshape_matrix = y_test_reshape_matrix.reshape(y_test.shape[0],1,y_test.shape[1])
+    y_val_reshape_matrix = y_val.values
+    y_val_reshape_matrix = y_val_reshape_matrix.reshape(y_val.shape[0],1,y_val.shape[1])
 
 
-    # print(X_train.shape)
     print(X_train_reshape.shape)
 
-    # print(X_test.shape)
-    print(X_test_reshape.shape)
-
-    # print(y_train.shape)
     print(y_train_reshape_matrix.shape)
 
-    return X_train_reshape, y_train_reshape_matrix,X_test_reshape, y_test_reshape_matrix
+    print(X_val_reshape.shape)
+
+    print(y_val_reshape_matrix.shape)
+
+    return X_train_reshape, y_train_reshape_matrix,X_val_reshape, y_val_reshape_matrix
 
 
-X_train_reshape, y_train_reshape_matrix,X_test_reshape, y_test_reshape_matrix = reshape_data(X_train, X_test, y_train, y_test)
+# X_train_reshape, y_train_reshape_matrix,X_val_reshape, y_val_reshape_matrix = reshape_data(X_train, X_val, y_train, y_val)
 
 from keras.models import Sequential
 from keras.layers import Dense, Embedding, Bidirectional, LSTM
@@ -169,7 +194,7 @@ from keras.optimizers import Adam
 from keras.callbacks import EarlyStopping, TensorBoard
 
 #LSTM
-def simple_LSTM(X_train_reshape, y_train_reshape_matrix,X_test_reshape, y_test_reshape_matrix,vector_size,model_batch_size,no_epochs):
+def simple_LSTM(X_train_reshape, y_train_reshape_matrix,X_val_reshape, y_val_reshape_matrix,vector_size,model_batch_size,no_epochs):
 
 
 
@@ -196,7 +221,7 @@ def simple_LSTM(X_train_reshape, y_train_reshape_matrix,X_test_reshape, y_test_r
     model.add(LSTM(hidden_size, return_sequences=True))
     # model.add(Dense(7, activation='linear'))
     # model.add(Dense(6, activation='sigmoid'))
-    model.add(Dense(y_train.shape[1], activation='sigmoid'))
+    model.add(Dense(y_train_reshape_matrix.shape[2], activation='sigmoid'))
 
     print(model.summary())
 
@@ -219,16 +244,16 @@ def simple_LSTM(X_train_reshape, y_train_reshape_matrix,X_test_reshape, y_test_r
 
     # model.fit(X_train_reshape,y_train_reshape_matrix, batch_size=500, epochs=15)
     model.fit(X_train_reshape, y_train_reshape_matrix, batch_size=model_batch_size, epochs=no_epochs,
-             validation_data=(X_test_reshape, y_test_reshape_matrix), callbacks=[tensorboard, EarlyStopping(min_delta=0.0001, patience=3)])
+             validation_data=(X_val_reshape, y_val_reshape_matrix), callbacks=[tensorboard, EarlyStopping(min_delta=0.0001, patience=3)])
 
 
     print('generate final prediction accuracy metrics')
-    val_lost, val_acc = model.evaluate(X_test_reshape,y_test_reshape_matrix)
+    val_lost, val_acc = model.evaluate(X_val_reshape,y_val_reshape_matrix)
 
     print('final val_lost ' + str(val_lost))
     print('final val_acc ' + str(val_acc))
 
-    return val_lost, val_acc
+    return val_lost, val_acc, model
 
 
 vector_size = 512
@@ -236,7 +261,7 @@ model_batch_size = 500
 no_epochs = 25
 
 # run LSTM
-# val_lost, val_acc = simple_LSTM(X_train_reshape, y_train_reshape_matrix,X_test_reshape, y_test_reshape_matrix,vector_size,model_batch_size,no_epochs)
+# val_lost, val_acc = simple_LSTM(X_train_reshape, y_train_reshape_matrix,X_val_reshape, y_val_reshape_matrix,vector_size,model_batch_size,no_epochs)
 
 # result list to store accuracies across all folds ...  probably should output
 # consolidated dataframe of all processed records
@@ -245,7 +270,7 @@ model_count = 0
 # for index, row in df_files.iterrows():
 #
 #     feature_file_df = pd.read_csv(row['paths'])
-#     #     testing feature files
+#     #     valing feature files
 #     #     feature_file_df = pd.read_csv(row['paths'], nrows=20)
 #     #     print(feature_file_df.head())
 #     X = feature_file_df
@@ -264,7 +289,7 @@ from sklearn.model_selection import KFold
 #initialize  k fold
 
 kf = KFold(n_splits=10, shuffle=True)
-kf.get_n_splits(X.values)
+kf.get_n_splits(X_training.values)
 
 accuracy_list = []
 fold = 0
@@ -274,62 +299,131 @@ fold = 0
 
 from imblearn.over_sampling import SMOTE
 
-for train_index, test_index in kf.split(X.values):
-    print("TRAIN:", train_index, "TEST:", test_index)
-    print("TRAIN Size:", len(train_index), "TEST Size:", len(test_index))
+for train_index, val_index in kf.split(X_training.values):
+    print("TRAIN:", train_index, "val:", val_index)
+    print("TRAIN Size:", len(train_index), "val Size:", len(val_index))
 
-    X_train, X_test = X.iloc[train_index], X.iloc[test_index]
-    y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+    X_train, X_val = X_training.iloc[train_index], X_training.iloc[val_index]
+    y_train, y_val = y_training.iloc[train_index], y_training.iloc[val_index]
 
-    X_train_df = X.iloc[train_index]
-    y_train_df = y.iloc[train_index]
-    X_test_df = X.iloc[test_index]
-    y_test_df = y.iloc[test_index]
+    # create val and training sets based on the cross validation indexes
+    X_train_df = X_training.iloc[train_index]
+    y_train_df = y_training.iloc[train_index]
+    X_val_df = X_training.iloc[val_index]
+    y_val_df = y_training.iloc[val_index]
 
-    X_train_reshape, y_train_reshape_matrix, X_test_reshape, y_test_reshape_matrix = reshape_data(X_train_df, X_test_df,
-                                                                                                  y_train_df, y_test_df)
+    if dataset == 'hate_nostop':
+         #grab original X df column headers in  order to maintain CODE column names after numpy conversion
 
-    val_lost, val_acc = simple_LSTM(X_train_reshape, y_train_reshape_matrix, X_test_reshape, y_test_reshape_matrix, vector_size,
+        X_cols = list(X_train_df.columns.values) + ['CODE']
+        print(X_cols)
+        print(len(X_cols))
+        #SMOTE#################
+        #convert to numpy
+        X_train = X_train_df.values
+        y_train = y_train_df.values
+        X_val = X_val_df.values
+        y_val = y_val_df.values
+
+        # y_train_CODE = y_train_df['CODE'].values
+
+        print("Number transactions X_train dataset: ", X_train.shape)
+        print("Number transactions y_train dataset: ", y_train.shape)
+        print("Number transactions X_val dataset: ", X_val.shape)
+        print("Number transactions y_val dataset: ", y_val.shape)
+
+        print("Before OverSampling, counts of label '6': {}".format(sum(y_train == 6)))
+        print("Before OverSampling, counts of label '5': {}".format(sum(y_train == 5)))
+        print("Before OverSampling, counts of label '4': {}".format(sum(y_train == 4)))
+        print("Before OverSampling, counts of label '3': {}".format(sum(y_train == 3)))
+        print("Before OverSampling, counts of label '2': {}".format(sum(y_train == 2)))
+        print("Before OverSampling, counts of label '1': {}".format(sum(y_train == 1)))
+        print("Before OverSampling, counts of label '0': {} \n".format(sum(y_train == 0)))
+
+
+        # print(X_train)
+        # print(y_train.ravel())
+        sm = SMOTE(random_state=2)
+        X_train_res, y_train_res = sm.fit_sample(X_train, y_train.ravel())
+
+        print('After OverSampling, the shape of train_X: {}'.format(X_train_res.shape))
+        print('After OverSampling, the shape of train_y: {} \n'.format(y_train_res.shape))
+
+        print("After OverSampling, counts of label '6': {}".format(sum(y_train_res == 6)))
+        print("After OverSampling, counts of label '5': {}".format(sum(y_train_res == 5)))
+        print("After OverSampling, counts of label '4': {}".format(sum(y_train_res == 4)))
+        print("After OverSampling, counts of label '3': {}".format(sum(y_train_res == 3)))
+        print("After OverSampling, counts of label '2': {}".format(sum(y_train_res == 2)))
+        print("After OverSampling, counts of label '1': {}".format(sum(y_train_res == 1)))
+        print("After OverSampling, counts of label '0': {}".format(sum(y_train_res == 0)))
+
+        X_train_res_df = pd.DataFrame(X_train_res)
+
+        y_train_res_df = pd.DataFrame(y_train_res)
+        # X_train_df = pd.DataFrame(X_train)
+        # y_train_df = pd.DataFrame(y_train)
+        X_val_df = pd.DataFrame(X_val)
+
+        y_val_df = pd.DataFrame(y_val)
+
+        # Join X and y train and resplit with correct columns
+        print(X_train_res_df.head())
+        print(y_train_res_df.head())
+
+        X_train_res_full_df = pd.merge(X_train_res_df, y_train_res_df, left_index=True, right_index=True)
+        X_train_res_full_df.columns = X_cols
+        X_val_full_df = pd.merge(X_val_df, y_val_df, left_index=True, right_index=True)
+        X_val_full_df.columns = X_cols
+
+        print(X_train_res_full_df.head())
+        print(X_val_full_df.head())
+
+        # X_train_res_full_df = X_train_res_df.join(y_train_res_df)
+        # X_val_full_df = X_val_df.join(y_val_df)
+
+        y_train_res_df = X_train_res_full_df[['CODE_0', 'CODE_1', 'CODE_2', 'CODE_3', 'CODE_4', 'CODE_5', 'CODE_6']]
+        X_train_res_df = X_train_res_full_df.drop(['CODE', 'CODE_0', 'CODE_1', 'CODE_2', 'CODE_3', 'CODE_4', 'CODE_5', 'CODE_6'], axis=1)
+
+        y_val_df = X_val_full_df[['CODE_0', 'CODE_1', 'CODE_2', 'CODE_3', 'CODE_4', 'CODE_5', 'CODE_6']]
+        X_val_df = X_val_full_df.drop(['CODE', 'CODE_0', 'CODE_1', 'CODE_2', 'CODE_3', 'CODE_4', 'CODE_5', 'CODE_6'], axis=1)
+
+
+        # SMOTE#################
+
+        print('X and y dataframes')
+        print(X_train_res_df.head())
+        print(y_train_res_df.head())
+        print(X_val_df.head())
+        print(y_val_df.head())
+
+
+
+
+
+        X_train_reshape, y_train_reshape_matrix, X_val_reshape, y_val_reshape_matrix = reshape_data(X_train_res_df, X_val_df,
+                                                                                                      y_train_res_df, y_val_df)
+
+        val_lost, val_acc, model = simple_LSTM(X_train_reshape, y_train_reshape_matrix, X_val_reshape, y_val_reshape_matrix, vector_size,
+                    model_batch_size, no_epochs)
+
+
+    #toxic
+    else:
+
+        X_train_reshape, y_train_reshape_matrix, X_val_reshape, y_val_reshape_matrix = reshape_data(X_train_df, X_val_df,
+                                                                                                  y_train_df, y_val_df)
+
+        val_lost, val_acc = simple_LSTM(X_train_reshape, y_train_reshape_matrix, X_val_reshape, y_val_reshape_matrix, vector_size,
                 model_batch_size, no_epochs)
 
     #append all accuracies
     #may want to have a model and save each model separately
     #also include option logic to control stopwords
+
     accuracy_list.append(val_acc)
 
-    # X_train = X_train_df.values
-    # y_train = y_train_df.values
-    # X_test = X_test_df.values
-    # y_test = y_test_df.values
 
-#     print("Number transactions X_train dataset: ", X_train.shape)
-#     print("Number transactions y_train dataset: ", y_train.shape)
-#     print("Number transactions X_test dataset: ", X_test.shape)
-#     print("Number transactions y_test dataset: ", y_test.shape)
-#
-#     print("Before OverSampling, counts of label '6': {}".format(sum(y_train == 6)))
-#     print("Before OverSampling, counts of label '5': {}".format(sum(y_train == 5)))
-#     print("Before OverSampling, counts of label '4': {}".format(sum(y_train == 4)))
-#     print("Before OverSampling, counts of label '3': {}".format(sum(y_train == 3)))
-#     print("Before OverSampling, counts of label '2': {}".format(sum(y_train == 2)))
-#     print("Before OverSampling, counts of label '1': {}".format(sum(y_train == 1)))
-#     print("Before OverSampling, counts of label '0': {} \n".format(sum(y_train == 0)))
-#
-#     print(X_train)
-#     print(y_train.ravel())
-#     sm = SMOTE(random_state=2)
-#     X_train_res, y_train_res = sm.fit_sample(X_train, y_train.ravel())
-#
-#     print('After OverSampling, the shape of train_X: {}'.format(X_train_res.shape))
-#     print('After OverSampling, the shape of train_y: {} \n'.format(y_train_res.shape))
-#
-#     print("Before OverSampling, counts of label '6': {}".format(sum(y_train_res == 6)))
-#     print("Before OverSampling, counts of label '5': {}".format(sum(y_train_res == 5)))
-#     print("Before OverSampling, counts of label '4': {}".format(sum(y_train_res == 4)))
-#     print("Before OverSampling, counts of label '3': {}".format(sum(y_train_res == 3)))
-#     print("Before OverSampling, counts of label '2': {}".format(sum(y_train_res == 2)))
-#     print("After OverSampling, counts of label '1': {}".format(sum(y_train_res == 1)))
-#     print("After OverSampling, counts of label '0': {}".format(sum(y_train_res == 0)))
+
 #
 #     # Classification intensity score histogram
 #     #         plt.figure()
@@ -342,11 +436,11 @@ for train_index, test_index in kf.split(X.values):
 #     y_train_res_df = pd.DataFrame(y_train_res)
 #     X_train_df = pd.DataFrame(X_train)
 #     y_train_df = pd.DataFrame(y_train)
-#     X_test_df = pd.DataFrame(X_test)
-#     y_test_df = pd.DataFrame(y_test)
+#     X_val_df = pd.DataFrame(X_val)
+#     y_val_df = pd.DataFrame(y_val)
 #
 #     remove_stop_words = False
-#     accuracy = rf_model(X_train_res_df, y_train_res_df, X_test_df, y_test_df, remove_stop_words, fold)
+#     accuracy = rf_model(X_train_res_df, y_train_res_df, X_val_df, y_val_df, remove_stop_words, fold)
 #     #     #append all accuracies
 #     #     #may want to have a model and save each model separately
 #     #     #also include option logic to control stopwords
@@ -373,3 +467,39 @@ print(results)
 #
 # print("model_count: " + str(model_count))
 # model_count += 1
+
+
+
+# make a prediction
+
+
+X_testing_full_df = pd.merge(X_testing, y_testing, left_index=True, right_index=True)
+X_testing_full_df.columns = X_cols
+
+print(X_testing_full_df.head())
+# print(X_val_full_df.head())
+
+# X_train_res_full_df = X_train_res_df.join(y_train_res_df)
+# X_val_full_df = X_val_df.join(y_val_df)
+
+y_testing_df = X_testing_full_df[['CODE_0', 'CODE_1', 'CODE_2', 'CODE_3', 'CODE_4', 'CODE_5', 'CODE_6']]
+X_testing_df = X_testing_full_df.drop(['CODE', 'CODE_0', 'CODE_1', 'CODE_2', 'CODE_3', 'CODE_4', 'CODE_5', 'CODE_6'], axis=1)
+
+X_testing_reshape = np.reshape(X_testing_df.values, ( X_testing_df.shape[0],1, X_testing_df.shape[1]))
+y_pred = model.predict_classes(X_testing_reshape)
+# show the inputs and predicted outputs3
+
+# print(ynew)
+for i in range(len(X_testing)):
+# 	# print("X=%s, Predicted=%s" % (X_testing.values[i], ynew[i]))
+    print(y_pred[i])
+
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import accuracy_score
+
+cm = confusion_matrix(X_testing_full_df['CODE'].values, y_pred)
+print(cm)
+
+print('accuracy on test set')
+
+print(accuracy_score(X_testing_full_df['CODE'].values, y_pred))

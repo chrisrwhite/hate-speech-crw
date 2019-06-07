@@ -39,12 +39,12 @@ dataset = 'hate_nostop'
 
 
 if dataset == 'hate_nostop':
-    df_short = pd.read_sql_query("SELECT extract, CODE_0, CODE_1, CODE_2, CODE_3, CODE_4, CODE_5, CODE_6 from hate", con)
+    df_short = pd.read_sql_query("SELECT extract, CODE_0, CODE_1, CODE_2, CODE_3, CODE_4, CODE_5, CODE_6, CODE from hate", con)
 
     # separate features from label
 
     data_df = df_short.loc[:, ['extract']]
-    label_df = df_short.loc[:, [ 'CODE_0', 'CODE_1', 'CODE_2', 'CODE_3', 'CODE_4', 'CODE_5', 'CODE_6']]
+    label_df = df_short.loc[:, [ 'CODE_0', 'CODE_1', 'CODE_2', 'CODE_3', 'CODE_4', 'CODE_5', 'CODE_6','CODE']]
 
     output_name = 'hate_clean_nostop'
 

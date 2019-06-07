@@ -29,14 +29,14 @@ import sqlite3
 # K.set_session(K.tf.Session(config=cfg))
 
 
-db_path = '../../data/processed/test.db'
+db_path = '../data/processed/test.db'
 # db = sqlite3.connect(db_path)
 con = sqlite3.connect(db_path)
 cur = con.cursor()
 
 
-# dataset = 'hate_nostop'
-dataset = 'toxic_nostop'
+dataset = 'hate_nostop'
+# dataset = 'toxic_nostop'
 
 
 # df_short = pd.read_sql_query("SELECT extract, CODE from t", db)
@@ -45,8 +45,8 @@ dataset = 'toxic_nostop'
 if dataset == 'hate_nostop':
     print('hate')
     partitions = 10
-    df_short = pd.read_sql_query("SELECT extract, CODE_0, CODE_1, CODE_2, CODE_3, CODE_4, CODE_5, CODE_6 from hate_clean_nostop", con)
-    output_file = '../../data/processed/sentence_embeddings/hate_universal_encoder_embedding_features.csv'
+    df_short = pd.read_sql_query("SELECT extract, CODE_0, CODE_1, CODE_2, CODE_3, CODE_4, CODE_5, CODE_6, CODE from hate_clean_nostop", con)
+    output_file = '../data/processed/sentence_embeddings/hate_universal_encoder_embedding_features.csv'
     output_name = 'hate_universal_encoder_embedding_features'
 
 else:
@@ -54,7 +54,7 @@ else:
     partitions = 100
 
     df_short = pd.read_sql_query("SELECT extract, toxic, severe_toxic, obscene, threat, insult, identity_hate from toxic_clean_nostop", con)
-    output_file = '../../data/processed/sentence_embeddings/toxic_universal_encoder_embedding_features.csv'
+    output_file = '../data/processed/sentence_embeddings/toxic_universal_encoder_embedding_features.csv'
     output_name = 'toxic_universal_encoder_embedding_features'
 
 # generate universal sentence embedding using this function

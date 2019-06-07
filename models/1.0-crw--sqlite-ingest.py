@@ -13,8 +13,8 @@ import pandas as pd
 db_path = '../data/processed/test.db'
 
 
-# dataset = 'hate'
-dataset = 'toxic'
+dataset = 'hate'
+# dataset = 'toxic'
 
 
 con = sqlite3.connect(db_path)
@@ -27,9 +27,9 @@ if dataset == 'hate':
     cur.execute("DROP TABLE IF EXISTS hate")
     cur.execute("DROP TABLE IF EXISTS t")
 
-    columns = ['show_date', 'show_name', 'subject', 'keyword', 'extract','A_B', 'CODE_0', 'CODE_1', 'CODE_2', 'CODE_3', 'CODE_4', 'CODE_5', 'CODE_6']
+    columns = ['show_date', 'show_name', 'subject', 'keyword', 'extract','A_B', 'CODE', 'CODE_0', 'CODE_1', 'CODE_2', 'CODE_3', 'CODE_4', 'CODE_5', 'CODE_6']
     print(['%s text' % column for column in columns])
-    cur.execute("CREATE TABLE hate ({} datetime,{} str,{} str,{} str,{} str,{} int,{} str,{} str,{} str,{} str,{} str,{} str,{} str);".format('show_date','show_name','subject','keyword','extract','A_B', 'CODE_0', 'CODE_1', 'CODE_2', 'CODE_3', 'CODE_4', 'CODE_5', 'CODE_6')) # use your column names here
+    cur.execute("CREATE TABLE hate ({} datetime,{} str,{} str,{} str,{} str,{} int,{} str,{} str,{} str,{} str,{} str,{} str ,{} str,{} str);".format('show_date','show_name','subject','keyword','extract','A_B', 'CODE','CODE_0', 'CODE_1', 'CODE_2', 'CODE_3', 'CODE_4', 'CODE_5', 'CODE_6')) # use your column names here
     raw_data_df = pd.read_csv(raw_path, encoding='latin-1')
 
     print(raw_data_df.head())
@@ -41,11 +41,15 @@ if dataset == 'hate':
 
     y_train_reshape.columns = ['CODE_0', 'CODE_1', 'CODE_2', 'CODE_3', 'CODE_4', 'CODE_5', 'CODE_6']
 
-    print(y_train_reshape.head())
+    # print(y_train_reshape.head())
 
+    y_train_reshape = y_train_reshape
     raw_data_df=raw_data_df.join(y_train_reshape)
 
-    raw_data_df.drop(['CODE'], axis=1, inplace=True)
+    # cols = raw_data_df.columns
+    # print(cols)
+
+    # raw_data_df.drop(['CODE'], axis=1, inplace=True)
     print(raw_data_df.head())
 
     raw_data_df.to_sql('hate', con, if_exists='append', index = False) # Insert the values from the csv file into the table 'CLIENTS'
