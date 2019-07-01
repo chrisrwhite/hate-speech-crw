@@ -1,0 +1,45 @@
+Where I left off:
+
+researching other glove implementations:
+
+1) glovpy
+
+https://pypi.org/project/glovepy/
+
+https://github.com/umlkhuang/glovepy/blob/master/setup.py
+
+2) glove
+
+https://groups.google.com/forum/#!topic/globalvectors/rqPmTBqFbCQ
+https://github.com/hans/glove.py
+http://www.foldl.me/2014/glove-python/
+
+3) just give up and use glove on the mac 
+
+
+
+Multi input keras models:
+
+https://www.pyimagesearch.com/2019/02/04/keras-multiple-inputs-and-mixed-data/
+
+https://www.google.com/search?q=keras+multiple+input+model+word+embedding&oq=keras+multiple+input+model+word+embedding&aqs=chrome..69i57j33.25953j0j7&sourceid=chrome&ie=UTF-8
+
+https://keras.io/getting-started/functional-api-guide/#multi-input-and-multi-output-models
+
+
+
+
+
+GLOVE PYTHON INSTALLATION GUIDE (REMEMBER TO INSTALL IN THE ENVIRONMENT!!!)
+3) glove python for windows installation solution
+ a) follow this guide:
+
+ C:\Users\chris\Anaconda3\envs\hate-speech-crw\Lib\site-packages\glove-python
+
+ https://github.com/maciejkula/glove-python/wiki/Installation-on-Windows
+
+ b) make this update to mingw64:
+
+C:\Program Files\mingw-w64\x86_64-8.1.0-win32-seh-rt_v6-rev0\mingw64\lib\gcc\x86_64-w64-mingw32\8.1.0\include\c++
+
+ https://stackoverflow.com/questions/42276984/hypot-has-not-been-declared

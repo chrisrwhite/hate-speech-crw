@@ -23,18 +23,36 @@ cur = con.cursor()
 dataset = 'hate_nostop'
 # dataset = 'toxic_nostop'
 
-
+# def missing_values_table(df):
+#     mis_val = df.isnull().sum()
+#     mis_val_percent = 100 * df.isnull().sum() / len(df)
+#     mis_val_table = pd.concat([mis_val, mis_val_percent], axis=1)
+#     mis_val_table_ren_columns = mis_val_table.rename(
+#         columns={0: 'Missing Values', 1: '% of Total Values'})
+#     mis_val_table_ren_columns = mis_val_table_ren_columns[
+#         mis_val_table_ren_columns.iloc[:, 1] != 0].sort_values(
+#         '% of Total Values', ascending=False).round(1)
+#     print("Your selected dataframe has " + str(df.shape[1]) + " columns.\n"
+#                                                               "There are " + str(mis_val_table_ren_columns.shape[0]) +
+#           " columns that have missing values.")
+#     return mis_val_table_ren_columns
 
 
 if dataset == 'hate_nostop':
-    X = pd.read_sql_query("SELECT * from hate_universal_encoder_embedding_features",con)
+    X = pd.read_sql_query("SELECT * from hate_universal_encoder_embedding_wefat",con)
 
+    # fill nan wefat scores
+    # missing_values_table(X)
+    X = X.fillna(0)
+    # missing_values_table(X)
     cols = X.columns
     print(cols)
 
     print('hate full feature file')
     print(X['extract'].head())
     print(X.shape)
+    # print(X.dtypes)
+
 
 
     # separate features from label
@@ -43,8 +61,13 @@ if dataset == 'hate_nostop':
 
     y = X.loc[:, y_cols]
     # X.drop(['id','extract','CODE','CODE_0', 'CODE_1', 'CODE_2', 'CODE_3', 'CODE_4', 'CODE_5', 'CODE_6'], axis=1, inplace = True)
-    X.drop(['id', 'extract', 'CODE'], axis=1,
+    X.drop(['index','id', 'extract', 'CODE'], axis=1,
            inplace=True)
+
+
+
+
+
     # need to make sure i am separating a test dataset completely from the neural network training
     # https://stackoverflow.com/questions/46308374/what-is-validation-data-used-for-in-a-keras-sequential-model
 
@@ -529,6 +552,29 @@ for train_index, val_index in kf.split(X_training.values):
 
 
         # SMOTE#################
+        all_x_cols = X_train_res_df.columns
+         # segment out word embedding and wefat scores
+        wefat_cols = []
+        embed_cols = []
+        for col in all_x_cols:
+
+             if col[-5:] == 'wefat':
+                 # print(col)
+                 # embed_cols.remove(col)
+                 wefat_cols.append(col)
+             else:
+                 embed_cols.append(col)
+
+        print('embed cols: ' + str(embed_cols))
+        print('embed cols len: ' + str(len(embed_cols)))
+
+        print('wefat cols: ' + str(wefat_cols))
+        print('wefat cols len: ' + str(len(wefat_cols)))
+
+        X_train_res_df = X_train_res_df[embed_cols]
+        X_val_df = X_val_df[embed_cols]
+
+
 
         print('X and y dataframes')
         print(X_train_res_df.head())
@@ -536,9 +582,15 @@ for train_index, val_index in kf.split(X_training.values):
         print(X_val_df.head())
         print(y_val_df.head())
 
+
+
          # modle 1
         X_train_reshape, y_train_reshape_matrix, X_val_reshape, y_val_reshape_matrix = reshape_data_model_1(X_train_res_df, X_val_df,
                                                                                                       y_train_res_df, y_val_df)
+
+
+
+
 
         val_lost, val_acc, model = simple_LSTM(X_train_reshape, y_train_reshape_matrix, X_val_reshape, y_val_reshape_matrix, vector_size,
                     model_batch_size, no_epochs)
@@ -553,15 +605,17 @@ for train_index, val_index in kf.split(X_training.values):
 
 
 
+
     #toxic
     else:
+        print('no toxic testing')
+        # X_train_reshape, y_train_reshape_matrix, X_val_reshape, y_val_reshape_matrix = reshape_data(X_train_df, X_val_df,
+        #                                                                                           y_train_df, y_val_df)
+        #
+        # val_lost, val_acc = simple_LSTM(X_train_reshape, y_train_reshape_matrix, X_val_reshape, y_val_reshape_matrix, vector_size,
+        #         model_batch_size, no_epochs)
 
-        X_train_reshape, y_train_reshape_matrix, X_val_reshape, y_val_reshape_matrix = reshape_data(X_train_df, X_val_df,
-                                                                                                  y_train_df, y_val_df)
-
-        val_lost, val_acc = simple_LSTM(X_train_reshape, y_train_reshape_matrix, X_val_reshape, y_val_reshape_matrix, vector_size,
-                model_batch_size, no_epochs)
-
+    break
 
     # save best performing model on validation dataset
     if val_acc > max_accuracy:
@@ -637,7 +691,7 @@ print(X_testing_full_df.head())
 # X_val_full_df = X_val_df.join(y_val_df)
 
 y_testing_df = X_testing_full_df[['CODE_0', 'CODE_1', 'CODE_2', 'CODE_3', 'CODE_4', 'CODE_5', 'CODE_6']]
-X_testing_df = X_testing_full_df.drop(['CODE', 'CODE_0', 'CODE_1', 'CODE_2', 'CODE_3', 'CODE_4', 'CODE_5', 'CODE_6'], axis=1)
+X_testing_df = X_testing_full_df[embed_cols]
 
 X_testing_reshape = np.reshape(X_testing_df.values, ( X_testing_df.shape[0],1, X_testing_df.shape[1]))
 

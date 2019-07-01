@@ -19,6 +19,10 @@ import re
 # train/validation/test split
 # from sklearn.model_selection import train_test_split
 import csv
+import wordsegment #http://www.grantjenks.com/docs/wordsegment/
+from wordsegment import load, segment
+load()
+
 
 # from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score, roc_curve, accuracy_score
 
@@ -102,18 +106,17 @@ def process_data(df):
         # remove remainint tokens that are not alphabetic
         tokens = [word for word in tokens if word.isalpha()]
 
-        # remove stop words (first time)
-        tokens = [word for word in tokens if word not in stop_words]
 
-        consolidated_output = tokens
 
-        #       SPLIT COMPOUND WORDS
-        #         consolidated_output = []
-        #         for item in tokens:
-        # #             split_items = segment_str(item, exclude=None)
+        # consolidated_output = tokens
 
-        #             split_items = splitter.split(item)
-        #             consolidated_output.extend(split_items)
+#       SPLIT COMPOUND WORDS
+        consolidated_output = []
+        for item in tokens:
+#             split_items = segment_str(item, exclude=None)
+
+            split_items = segment(item)
+            consolidated_output.extend(split_items)
 
         # remove stop words (second time)
         consolidated_output = [word for word in consolidated_output if word not in stop_words]
@@ -122,6 +125,9 @@ def process_data(df):
         #         print(consolidated_output)
 
         compiled_output.append(consolidated_output)
+
+        # remove stop words
+        compiled_output = [word for word in compiled_output if word not in stop_words]
 
     return compiled_output
 
@@ -136,7 +142,7 @@ df_new = pd.DataFrame(train_cleansed_tokens, columns = ['extract'])
 df_new = df_new.join(label_df)
 
 print('df_new.head()')
-print(df_new.tail())
+print(df_new.head())
 
 cur.execute("DROP TABLE IF EXISTS {}".format(output_name))
 print('cleansed text exported to db, table name: ' + output_name)

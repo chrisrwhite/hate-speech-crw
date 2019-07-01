@@ -2,7 +2,18 @@ import pandas as pd
 import sqlite3
 from sklearn.model_selection import train_test_split
 import os
+
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 os.environ['TF_ENABLE_AUTO_MIXED_PRECISION'] = '1'
+
+
+import logging
+LOG_FILENAME = "modeling.log"
+for handler in logging.root.handlers[:]:
+    logging.root.removeHandler(handler)
+logging.basicConfig(filename=LOG_FILENAME,level=logging.DEBUG)
+logging.info('Modeling Started...')
+
 #need to update input file to ESN Clean _Nostop, on my desktop
 
 # path_input = "../data/processed/sentence_embeddings/infersent_feature_file_without_stopwords_clean.csv"
@@ -23,18 +34,36 @@ cur = con.cursor()
 dataset = 'hate_nostop'
 # dataset = 'toxic_nostop'
 
-
+# def missing_values_table(df):
+#     mis_val = df.isnull().sum()
+#     mis_val_percent = 100 * df.isnull().sum() / len(df)
+#     mis_val_table = pd.concat([mis_val, mis_val_percent], axis=1)
+#     mis_val_table_ren_columns = mis_val_table.rename(
+#         columns={0: 'Missing Values', 1: '% of Total Values'})
+#     mis_val_table_ren_columns = mis_val_table_ren_columns[
+#         mis_val_table_ren_columns.iloc[:, 1] != 0].sort_values(
+#         '% of Total Values', ascending=False).round(1)
+#     print("Your selected dataframe has " + str(df.shape[1]) + " columns.\n"
+#                                                               "There are " + str(mis_val_table_ren_columns.shape[0]) +
+#           " columns that have missing values.")
+#     return mis_val_table_ren_columns
 
 
 if dataset == 'hate_nostop':
-    X = pd.read_sql_query("SELECT * from hate_universal_encoder_embedding_features",con)
+    X = pd.read_sql_query("SELECT * from hate_universal_encoder_embedding_wefat",con)
 
+    # fill nan wefat scores
+    # missing_values_table(X)
+    X = X.fillna(0)
+    # missing_values_table(X)
     cols = X.columns
     print(cols)
 
     print('hate full feature file')
     print(X['extract'].head())
     print(X.shape)
+    # print(X.dtypes)
+
 
 
     # separate features from label
@@ -43,8 +72,13 @@ if dataset == 'hate_nostop':
 
     y = X.loc[:, y_cols]
     # X.drop(['id','extract','CODE','CODE_0', 'CODE_1', 'CODE_2', 'CODE_3', 'CODE_4', 'CODE_5', 'CODE_6'], axis=1, inplace = True)
-    X.drop(['id', 'extract', 'CODE'], axis=1,
+    X.drop(['index','id', 'extract', 'CODE'], axis=1,
            inplace=True)
+
+
+
+
+
     # need to make sure i am separating a test dataset completely from the neural network training
     # https://stackoverflow.com/questions/46308374/what-is-validation-data-used-for-in-a-keras-sequential-model
 
@@ -57,15 +91,16 @@ if dataset == 'hate_nostop':
     # random_seed = 111 # 0.309
     # random_seed = 1010 # 0.35
     # random_seed = 10101  #0.218
-    random_seed = 123 # 0.41
+
     # random_seed = 132  # 0.279
     # random_seed = 321 # 0.253
     # random_seed = 320 #0.227
     # random_seed = 404 #0.26
     # random_seed = 202 # 0.27
     # random_seed = 808
+    random_seed = 123 # 0.41 #new 0.609
 
-
+    # X_training, X_testing, y_training, y_testing = train_test_split(X, y, test_size=0.1, random_state=random_seed)
     X_training, X_testing, y_training, y_testing = train_test_split(X, y, test_size=0.2, random_state=random_seed)
 
     print('X_training')
@@ -150,7 +185,7 @@ import numpy as np
 
 
 
-def reshape_data_model_1(X_train, X_val, y_train, y_val):
+def reshape_data_model_1(X_train,X_train_wef, X_val,X_val_wef, y_train, y_val):
     X_train_reshape = np.reshape(X_train.values, ( X_train.shape[0],1, X_train.shape[1]))
 
     X_val_reshape = np.reshape(X_val.values, ( X_val.shape[0],1, X_val.shape[1]))
@@ -162,15 +197,18 @@ def reshape_data_model_1(X_train, X_val, y_train, y_val):
     y_val_reshape_matrix = y_val_reshape_matrix.reshape(y_val.shape[0],1,y_val.shape[1])
 
 
-    print(X_train_reshape.shape)
+    X_train_wef_reshape = np.reshape(X_train_wef.values, ( X_train_wef.shape[0],1, X_train_wef.shape[1]))
 
-    print(y_train_reshape_matrix.shape)
+    X_val_wef_reshape = np.reshape(X_val_wef.values, ( X_val_wef.shape[0],1, X_val_wef.shape[1]))
 
-    print(X_val_reshape.shape)
+    print("X_train_reshape.shape" + str(X_train_reshape.shape))
+    print("y_train_reshape_matrix.shape" + str(y_train_reshape_matrix.shape))
+    print("X_val_reshape.shape" + str(X_val_reshape.shape))
+    print("y_val_reshape_matrix.shape" + str(y_val_reshape_matrix.shape))
+    print("X_train_wef_reshape.shape" + str(X_train_wef_reshape.shape))
+    print("X_val_wef_reshape.shape" + str(X_val_wef_reshape.shape))
 
-    print(y_val_reshape_matrix.shape)
-
-    return X_train_reshape, y_train_reshape_matrix,X_val_reshape, y_val_reshape_matrix
+    return X_train_reshape,X_train_wef_reshape, y_train_reshape_matrix, X_val_reshape,X_val_wef_reshape, y_val_reshape_matrix
 
 def reshape_data_model_2(X_train, X_val, y_train, y_val):
     X_train_reshape = np.reshape(X_train.values, ( X_train.shape[0], X_train.shape[1], 1))
@@ -212,6 +250,8 @@ from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import Flatten
 from keras.layers import Embedding
+from keras.layers import Average
+from keras.layers import concatenate
 from keras.layers.convolutional import Conv1D
 from keras.layers.convolutional import MaxPooling1D
 
@@ -233,7 +273,7 @@ from keras.callbacks import EarlyStopping, TensorBoard
 from keras.models import load_model
 
 #LSTM
-def simple_LSTM(X_train_reshape, y_train_reshape_matrix,X_val_reshape, y_val_reshape_matrix,vector_size,model_batch_size,no_epochs):
+def simple_LSTM(X_train_reshape,X_train_wef_reshape, y_train_reshape_matrix,X_val_reshape,X_val_wef_reshape, y_val_reshape_matrix,vector_size,model_batch_size,no_epochs):
 
 
 
@@ -297,74 +337,72 @@ def simple_LSTM(X_train_reshape, y_train_reshape_matrix,X_val_reshape, y_val_res
     model = Sequential()
     timesteps = None
     data_dim = X_train_reshape.shape[2]
-    vector_size = 512
+    vector_size = 37
+
+    input_emb = Input(shape=(timesteps, data_dim))
+    # input_wef = Input(shape=(vector_size, 1))
+    # input_wef = Input(shape=(1, vector_size))
+    input_wef = Input(shape=(timesteps, vector_size))
+
+    #sentence embedding LSMT Model
+    # model_emb = Conv1D(32, kernel_size=3, activation='elu', padding='same', input_shape=(vector_size, 1))(input_emb)
+    # model_emb = Conv1D(32, kernel_size=3, activation='elu', padding='same')(model_emb)
+    # model_emb = Conv1D(32, kernel_size=3, activation='relu', padding='same')(model_emb)
+    # model_emb = MaxPooling1D(pool_size=3)(model_emb)
+    model_emb = Bidirectional(LSTM(hidden_size, return_sequences=True), merge_mode='concat')(input_emb)  # accuracy  = 0.33
+    model_emb = Bidirectional(LSTM(hidden_size, return_sequences=True),merge_mode='concat')(model_emb)
+    model_emb = Bidirectional(LSTM(hidden_size, return_sequences=True), merge_mode='concat')(model_emb)
+    model_emb_output = Dense(y_train_reshape_matrix.shape[2], activation='softmax')(model_emb)
+    logging.info('model_emb_output: ' + str(model_emb_output))
+    model_emb = Model(inputs=input_emb, outputs=model_emb_output)
 
 
-    model = Sequential()
-    input = Input(shape=(timesteps, data_dim))
-    model = Conv1D(32, kernel_size=3, activation='elu', padding='same', input_shape=(vector_size, 1))(input)
-    model = Conv1D(32, kernel_size=3, activation='elu', padding='same')(model)
-    model = Conv1D(32, kernel_size=3, activation='relu', padding='same')(model)
-    model = MaxPooling1D(pool_size=3)(model)
-    model = Bidirectional(LSTM(hidden_size, return_sequences=True, input_shape=(timesteps, data_dim)),
-                          merge_mode='concat')(model)  # accuracy  = 0.316
-    model = Bidirectional(LSTM(hidden_size, return_sequences=True), merge_mode='concat')(input)  # accuracy  = 0.279
-    model = Bidirectional(LSTM(hidden_size, return_sequences=True),merge_mode='concat')(model) # 3) added this 0.21259
-    model = Bidirectional(LSTM(hidden_size, return_sequences=True), merge_mode='concat')(model)
+    #sentence wefat conv model: simple fully connected network
+
+    model_wef = Dense(512, activation='relu', input_shape=(timesteps, vector_size))(input_wef)
+
+    model_wef = Dense(512, activation='relu')(model_wef)
+
+    model_wef = Dense(512, activation='relu')(model_wef)
+
+    model_wef = Dense(512, activation='relu')(model_wef)
+
+    model_wef = Dense(512, activation='relu')(model_wef)
+
+    model_wef = Dense(512, activation='relu')(model_wef)
+
+    model_wef = Dense(512, activation='relu')(model_wef)
+    # model_wef = Dropout(0.1)(model_wef)
+    model_wef = Dense(512, activation='relu')(model_wef)
+    # model_wef = Dropout(0.2)(model_wef)
+    model_wef_output = Dense(y_train_reshape_matrix.shape[2], activation='softmax')(model_wef)
 
 
-    output = Dense(y_train_reshape_matrix.shape[2], activation='softmax')(model)
-    model = Model(input, output)
+    # model_wef = Bidirectional(LSTM(hidden_size, return_sequences=True), merge_mode='concat')(input_wef)
+    # model_wef = Bidirectional(LSTM(hidden_size, return_sequences=True),merge_mode='concat')(model_wef)
+    # model_wef = Bidirectional(LSTM(hidden_size, return_sequences=True), merge_mode='concat')(model_wef)
+    # model_wef_output = Dense(y_train_reshape_matrix.shape[2], activation='softmax')(model_wef)
+    # logging.info('model_wef_output: ' + str(model_wef_output))
+
+
+    model_wef = Model(inputs=input_wef, outputs=model_wef_output)
+
+    # combine the output of the two branches
+    combined = Average()([model_emb.output, model_wef.output])
+    # combined = concatenate([model_emb.output, model_wef.output])
+
+    # model = Model(input_emb, output)
+    model = Model(inputs=[input_emb, input_wef], outputs=combined)
+    # model = Model(inputs=[input_emb, input_wef], outputs=model_emb_output)
+    # model = Model(inputs=[input_emb, input_wef], outputs=model_wef_output)
+
     model.compile(loss='categorical_crossentropy', optimizer=Adam(lr=0.0001, decay=1e-6), metrics=['accuracy'])
 
     ####################### MODEL 2:                 ####################################
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    # from keras.models import Sequential
-    # from keras.layers import Conv1D, Dropout, Dense, Flatten, LSTM, MaxPooling1D, Bidirectional
-    # from keras.optimizers import Adam
-    # from keras.callbacks import EarlyStopping, TensorBoard
-    #
-    # model = Sequential()
-    #
-    # vector_size = 512
-    # model.add(Conv1D(32, kernel_size=3, activation='elu', padding='same',
-    #                  input_shape=(vector_size,1)))
-    # model.add(Conv1D(32, kernel_size=3, activation='elu', padding='same'))
-    # model.add(Conv1D(32, kernel_size=3, activation='relu', padding='same'))
-    # model.add(MaxPooling1D(pool_size=3))
-    #
-    # model.add(Bidirectional(LSTM(512, dropout=0.2, recurrent_dropout=0.3)))
-    #
-    # model.add(Dense(512, activation='sigmoid'))
-    # model.add(Dropout(0.2))
-    # model.add(Dense(512, activation='sigmoid'))
-    # model.add(Dropout(0.25))
-    # model.add(Dense(512, activation='sigmoid'))
-    # model.add(Dropout(0.25))
-    #
-    #
-    # model.add(Dense(y_train_reshape_matrix.shape[1], activation='softmax'))
-    # model.compile(loss='categorical_crossentropy', optimizer=Adam(lr=0.0001, decay=1e-6), metrics=['accuracy'])
-
-
-    print(model.summary())
+    # print(model.summary())
     # Keras detects the output_shape and automatically determines which accuracy to use when accuracy is specified. For multi-class classification, categorical_accuracy will be used internally.
     # https://stackoverflow.com/questions/43544358/categorical-crossentropy-need-to-use-categorical-accuracy-or-accuracy-as-the-met
     tensorboard = TensorBoard(log_dir='logs/', histogram_freq=0, write_graph=True, write_images=True)
@@ -376,15 +414,15 @@ def simple_LSTM(X_train_reshape, y_train_reshape_matrix,X_val_reshape, y_val_res
 
 
     # model.fit(X_train_reshape,y_train_reshape_matrix, batch_size=500, epochs=15)
-    model.fit(X_train_reshape, y_train_reshape_matrix, batch_size=model_batch_size, epochs=no_epochs,
-             validation_data=(X_val_reshape, y_val_reshape_matrix), callbacks=[tensorboard, EarlyStopping(min_delta=0.0001, patience=3)])
+    model.fit([X_train_reshape,X_train_wef_reshape], y_train_reshape_matrix, verbose= 1, batch_size=model_batch_size, epochs=no_epochs,
+             validation_data=([X_val_reshape,X_val_wef_reshape], y_val_reshape_matrix), callbacks=[tensorboard, EarlyStopping(min_delta=0.0001, patience=3)])
 
     # prevent overfitting or over training of the network, EarlyStopping() is used in callback
 
 
 
     print('generate final prediction accuracy metrics')
-    val_lost, val_acc = model.evaluate(X_val_reshape,y_val_reshape_matrix)
+    val_lost, val_acc = model.evaluate([X_val_reshape,X_val_wef_reshape],y_val_reshape_matrix)
 
     print('final val_lost ' + str(val_lost))
     print('final val_acc ' + str(val_acc))
@@ -529,6 +567,32 @@ for train_index, val_index in kf.split(X_training.values):
 
 
         # SMOTE#################
+        all_x_cols = X_train_res_df.columns
+         # segment out word embedding and wefat scores
+        wefat_cols = []
+        embed_cols = []
+        for col in all_x_cols:
+
+             if col[-5:] == 'wefat':
+                 # print(col)
+                 # embed_cols.remove(col)
+                 wefat_cols.append(col)
+             else:
+                 embed_cols.append(col)
+
+        print('embed cols: ' + str(embed_cols))
+        print('embed cols len: ' + str(len(embed_cols)))
+
+        print('wefat cols: ' + str(wefat_cols))
+        print('wefat cols len: ' + str(len(wefat_cols)))
+
+        X_train_emb_res_df = X_train_res_df[embed_cols]
+        X_val_emb_df = X_val_df[embed_cols]
+
+        # X_train_wef_reshape, X_val_wef_reshape
+        X_train_wef_res_df = X_train_res_df[wefat_cols]
+        X_val_wef_df = X_val_df[wefat_cols]
+
 
         print('X and y dataframes')
         print(X_train_res_df.head())
@@ -536,11 +600,17 @@ for train_index, val_index in kf.split(X_training.values):
         print(X_val_df.head())
         print(y_val_df.head())
 
+
+
          # modle 1
-        X_train_reshape, y_train_reshape_matrix, X_val_reshape, y_val_reshape_matrix = reshape_data_model_1(X_train_res_df, X_val_df,
+        X_train_reshape,X_train_wef_reshape, y_train_reshape_matrix, X_val_reshape,X_val_wef_reshape, y_val_reshape_matrix = reshape_data_model_1(X_train_emb_res_df,X_train_wef_res_df, X_val_emb_df,X_val_wef_df,
                                                                                                       y_train_res_df, y_val_df)
 
-        val_lost, val_acc, model = simple_LSTM(X_train_reshape, y_train_reshape_matrix, X_val_reshape, y_val_reshape_matrix, vector_size,
+
+
+
+
+        val_lost, val_acc, model = simple_LSTM(X_train_reshape,X_train_wef_reshape, y_train_reshape_matrix,X_val_reshape,X_val_wef_reshape, y_val_reshape_matrix, vector_size,
                     model_batch_size, no_epochs)
 
         #model 2
@@ -553,21 +623,27 @@ for train_index, val_index in kf.split(X_training.values):
 
 
 
+
     #toxic
     else:
+        print('no toxic testing')
+        # X_train_reshape, y_train_reshape_matrix, X_val_reshape, y_val_reshape_matrix = reshape_data(X_train_df, X_val_df,
+        #                                                                                           y_train_df, y_val_df)
+        #
+        # val_lost, val_acc = simple_LSTM(X_train_reshape, y_train_reshape_matrix, X_val_reshape, y_val_reshape_matrix, vector_size,
+        #         model_batch_size, no_epochs)
 
-        X_train_reshape, y_train_reshape_matrix, X_val_reshape, y_val_reshape_matrix = reshape_data(X_train_df, X_val_df,
-                                                                                                  y_train_df, y_val_df)
-
-        val_lost, val_acc = simple_LSTM(X_train_reshape, y_train_reshape_matrix, X_val_reshape, y_val_reshape_matrix, vector_size,
-                model_batch_size, no_epochs)
 
 
     # save best performing model on validation dataset
+    logging.info("val acc: " + str(val_acc))
     if val_acc > max_accuracy:
         # serialize weights to HDF5
         model.save("../models/model.h5")
         print("Saved model to disk")
+        logging.info("Saved model to disk")
+        max_accuracy = val_acc
+    # break
 
 
     #append all accuracies
@@ -617,6 +693,7 @@ else:
     results = results.append(results_2)
 
 print("results:")
+logging.info('Accuracies: ' + str(results))
 print(results)
 #
 # print("model_count: " + str(model_count))
@@ -637,10 +714,11 @@ print(X_testing_full_df.head())
 # X_val_full_df = X_val_df.join(y_val_df)
 
 y_testing_df = X_testing_full_df[['CODE_0', 'CODE_1', 'CODE_2', 'CODE_3', 'CODE_4', 'CODE_5', 'CODE_6']]
-X_testing_df = X_testing_full_df.drop(['CODE', 'CODE_0', 'CODE_1', 'CODE_2', 'CODE_3', 'CODE_4', 'CODE_5', 'CODE_6'], axis=1)
+X_testing_df = X_testing_full_df[embed_cols]
+X_testing_wef_df = X_testing_full_df[wefat_cols]
 
 X_testing_reshape = np.reshape(X_testing_df.values, ( X_testing_df.shape[0],1, X_testing_df.shape[1]))
-
+X_testing_wef_reshape = np.reshape(X_testing_wef_df.values, ( X_testing_wef_df.shape[0],1, X_testing_wef_df.shape[1]))
 
 #load best performing validation model:
 model = load_model("../models/model.h5")
@@ -648,8 +726,11 @@ model = load_model("../models/model.h5")
 #model 2
 # y_pred = model.predict_classes(X_testing_reshape)
 
-#model 1
-y_prob = model.predict(X_testing_reshape)
+#model 1 [X_val_reshape,X_val_wef_reshape]
+
+# y_prob = model.predict(X_testing_reshape)
+# y_prob = model.predict(X_testing_wef_reshape)
+y_prob = model.predict([X_testing_reshape, X_testing_wef_reshape])
 y_pred = y_prob.argmax(axis=-1)
 
 
